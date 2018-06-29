@@ -5,11 +5,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link rel="stylesheet" href="./style.css">
   <title>Document</title>
 </head>
 
 <body>
-
+<h1>打开F12，查看 application --> service wrokers</h1>
+<button onclick="addScript()">添加js</button>
 </body>
 <script>
   if ('serviceWorker' in navigator) {
@@ -26,6 +28,12 @@
           console.log('ServiceWorker registration failed: ', err)
         })
     })
+  }
+
+  function addScript () {
+    var script = document.createElement('script')
+    script.src = './index.js'
+    document.body.appendChild(script)
   }
 </script>
 

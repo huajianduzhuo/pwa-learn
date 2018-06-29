@@ -88,6 +88,100 @@ self.addEventListener('install', function(event) {
 * 缓存文件
 * 确认是否所有需要缓存的文件全部缓存成功
 
+```javascript
+var CACHE_NAME = 'my-first-cache-v1'
+var urlsToCache = [
+  '/style.css'
+]
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log('opened cache')
+        return cache.addAll(urlsToCache)
+      })
+  )
+})
+```
+
+`event.waitUntil()` 方法接收一个 promise，并通过它知道安装消耗的时间，以及是否安装成功。
+
+如果所有文件缓存成功，Service Worker 则为 installed。如果任何一个文件缓存失败，则 Service Worker 安装失败。
+
+我们还可以在 install 事件中执行其他任务，或者避免把所有任务放在一个 install 事件中。
+
+## 缓存和返回请求
+
+Service Worker 安装成功，并且用户跳转到一个不同的页面或者刷新之后，Service Worker 将开始捕捉 fetch 事件。
+
+```javascript
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        // cache 命中 - 返回response
+        console.log('response', response)
+        if (response) {
+          return response
+        }
+        return fetch(event.request)
+      })
+  )
+})
+```
+
+> 在 chrome 中测试发现，仅刷新页面缓存的文件没有从 cache 中获取，新打开一个页面可以看到 Service Worker 的 fetch 事件的效果。
+
+如果你想要渐进式的缓存资源，可以通过处理 fetch request 的 response，将其添加进 cache。
+
+```javascript
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        // cache 命中 - 返回response
+        if (response) {
+          return response
+        }
+        // cache 没命中，请求资源并且将响应添加进缓存
+        // 因为 request 和 response 都是 stream，仅可以被使用一次，
+        // 但是我们的浏览器页面和 cache 都要使用，所有需要复制一份
+        var fetchRequest = event.request.clone()
+        return fetch(fetchRequest).then(
+          response => {
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response
+            }
+
+            var responseToCache = response.clone()
+            caches.open(CACHE_NAME)
+              .then(cache => {
+                cache.put(event.request, responseToCache)
+              })
+            
+            return response
+          }
+        )
+      })
+  )
+})
+```
+
+response 的 type 为 basic，说明请求的资源来自当前域名。上面的代码校验不等于 basic 直接返回，意为来自其他域名的资源不进行缓存。
+
+## Service Worker 版本更新
+
+更新 Service Worker 需要遵从以下步骤：
+
+1. 更新 Service Worker javascript 文件。当用户打开我们的网站，浏览器会重新加载 Service Worker 的 js 文件，只要有改动，即会被视为新的。
+2. 开启新的 Service Worker，并触发 `install` 事件。
+3. 此时，旧的 Service Worker 仍然在控制当前页面，所以新的 Service Worker 将会进入 `waiting` 状态。
+4. 所有已打开的页面关闭之后，旧的 Service Worker 自动停止，新的 Service Worker 会在重新打开的页面生效。
+5. 一旦新的 Service Worker 生效，它的 `activate` 事件会被触发。
+
+在 `activate` 事件回调里，一个共同的任务是 cache 管理。必须在 `activate` 事件清理旧版本的 Service Worker，而不是在 `install` 事件中清理的原因是，如果在 `install` 事件中清理，则包括正在控制当前页面的 Service Worker 在内的所有旧版本 Service Worker，都会被停止，使得当前页面没有可以使用的 Service Worker。
+
 ## 资料
 
 英文：[https://developers.google.cn/web/fundamentals/primers/service-workers/](https://developers.google.cn/web/fundamentals/primers/service-workers/)
