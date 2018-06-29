@@ -2,6 +2,8 @@
 
 [Progressive Web App Checklist](https://developers.google.cn/web/progressive-web-apps/checklist)
 
+[笔记](http://mengyujing.com/pwa-learn)
+
 ## 启动 demo
 
 `npm install`
