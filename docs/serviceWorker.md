@@ -18,7 +18,7 @@ Service Worker 的生命周期与我们的网页是完全分开的。
 
 下面是一个简单版本的 Service Worker **第一次安装时**的生命周期图。
 
-![image](../assets/sw-lifecycle.png)
+![image](http://ovqy85q1k.bkt.clouddn.com/sw-lifecycle.png)
 
 ## 使用 Service Worker 的先决条件
 
